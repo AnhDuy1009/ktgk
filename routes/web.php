@@ -35,4 +35,7 @@ Route::middleware('auth')->group(function () {
     Route::delete('profile', [ProfileController::class, 'destroy'])->name('profile.destroy');
 });
 
-require __DIR__.'/auth.php';
+// Route tìm kiếm laptop
+Route::post('timkiem', [HomeController::class, 'search'])->name('laptop.search');
+
+require __DIR__ . '/auth.php';
