@@ -3,7 +3,9 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB; 
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
+use App\Mail\OrderConfirmation; 
 
 class HomeController extends Controller
 {
@@ -88,5 +90,84 @@ class HomeController extends Controller
 
         // Quay lại trang chi tiết và báo thành công
         return redirect()->back()->with('success', 'Đã thêm sản phẩm vào giỏ hàng thành công!');
+    }
+
+    // 3. Hàm hiển thị giỏ hàng
+    public function viewCart()
+    {
+        $cart = session()->get('cart', []);
+        $brands = DB::table('danh_muc_laptop')->get();
+        
+        return view('cart.index', compact('cart', 'brands'));
+    }
+
+    // 4. Hàm xóa sản phẩm khỏi giỏ hàng
+    public function removeFromCart($id)
+    {
+        $cart = session()->get('cart', []);
+        
+        if(isset($cart[$id])) {
+            unset($cart[$id]);
+            session()->put('cart', $cart);
+        }
+
+        return redirect()->route('cart.view')->with('success', 'Đã xóa sản phẩm khỏi giỏ hàng!');
+    }
+
+    // 5. Hàm xử lý đặt hàng
+    public function checkout(Request $request)
+    {
+        $cart = session()->get('cart', []);
+        
+        // Kiểm tra nếu giỏ hàng trống
+        if(empty($cart)) {
+            return redirect()->route('cart.view')->with('error', 'Giỏ hàng của bạn trống!');
+        }
+
+        // Kiểm tra người dùng đã đăng nhập chưa
+        if(!auth()->check()) {
+            return redirect()->route('login')->with('error', 'Vui lòng đăng nhập trước khi đặt hàng!');
+        }
+
+        // Lấy thông tin thanh toán từ form
+        $paymentMethod = $request->input('payment_method');
+        
+        // Tính tổng tiền
+        $totalPrice = 0;
+        foreach($cart as $item) {
+            $totalPrice += $item['price'] * $item['quantity'];
+        }
+
+        // Lấy thông tin người dùng hiện tại
+        $user = auth()->user();
+        
+        try {
+            // Gửi email xác nhận đặt hàng
+            Mail::to($user->email)->send(new OrderConfirmation(
+                $cart,
+                $totalPrice,
+                $paymentMethod,
+                $user->name,
+                $user->email
+            ));
+        } catch (\Exception $e) {
+            // Log lỗi email nhưng không cản trở quá trình đặt hàng
+            \Log::error('Email gửi thất bại: ' . $e->getMessage());
+        }
+
+        // Lưu thông tin đơn hàng vào database (nếu có bảng orders)
+        // Ở đây bạn có thể lưu đơn hàng nếu có table orders
+        
+        // Xóa giỏ hàng sau khi đặt hàng
+        session()->forget('cart');
+
+        // Quay lại trang giỏ hàng với thông báo thành công
+        return redirect()->route('cart.view')->with('success', 'Đặt hàng thành công! Email xác nhận đã được gửi tới ' . $user->email);
+    }
+
+    // 6. Hàm hiển thị trang xác nhận đặt hàng thành công
+    public function orderSuccess()
+    {
+        return view('cart.order-success');
     }
 }

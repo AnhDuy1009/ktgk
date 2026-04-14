@@ -19,7 +19,20 @@
             </div>
 
             <!-- Settings Dropdown -->
-            <div class="hidden sm:flex sm:items-center sm:ms-6">
+            <div class="hidden sm:flex sm:items-center sm:ms-6 gap-4">
+                <!-- Nút giỏ hàng -->
+                <a href="{{ route('cart.view') }}" class="relative inline-flex items-center px-3 py-2 text-sm font-medium text-gray-600 hover:text-gray-900 transition ease-in-out duration-150">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                    </svg>
+                    @php $cartCount = count(session()->get('cart', [])); @endphp
+                    @if($cartCount > 0)
+                        <span class="absolute top-0 right-0 inline-flex items-center justify-center px-2 py-1 text-xs font-bold leading-none text-white transform translate-x-1/2 -translate-y-1/2 bg-red-600 rounded-full">
+                            {{ $cartCount }}
+                        </span>
+                    @endif
+                </a>
+
                 <x-dropdown align="right" width="48">
                     <x-slot name="trigger">
                         <button class="inline-flex items-center px-3 py-2 border border-transparent text-sm leading-4 font-medium rounded-md text-gray-500 bg-white hover:text-gray-700 focus:outline-none transition ease-in-out duration-150">
@@ -69,6 +82,13 @@
         <div class="pt-2 pb-3 space-y-1">
             <x-responsive-nav-link :href="route('dashboard')" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link :href="route('cart.view')" :active="request()->routeIs('cart.view')">
+                <i class="fa fa-shopping-cart mr-2"></i>{{ __('Giỏ hàng') }}
+                @php $cartCount = count(session()->get('cart', [])); @endphp
+                @if($cartCount > 0)
+                    <span class="badge badge-danger ml-2">{{ $cartCount }}</span>
+                @endif
             </x-responsive-nav-link>
         </div>
 
