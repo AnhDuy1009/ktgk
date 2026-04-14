@@ -2,10 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\OrderConfirmation;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Mail;
-use App\Mail\OrderConfirmation; 
 
 class HomeController extends Controller
 {
@@ -29,7 +29,7 @@ class HomeController extends Controller
             $query->orderBy('gia', 'desc');
         } else {
             // Sắp xếp mặc định
-            $query->latest('id'); 
+            $query->latest('id');
         }
 
         // Lấy dữ liệu sản phẩm
@@ -37,15 +37,16 @@ class HomeController extends Controller
 
         // Lấy danh sách thương hiệu (nếu cần dùng)
         $brands = DB::table('danh_muc_laptop')->get();
-        
-        return view("laptop.index", compact('laptops', 'brands'));
+
+        return view('laptop.index', compact('laptops', 'brands'));
     }
+
     // 1. Hàm hiển thị chi tiết sản phẩm
     public function detail($id)
     {
         // Lấy thông tin laptop theo id
         $laptop = DB::table('san_pham')->where('id', $id)->first();
-        
+
         // Nếu không tìm thấy sản phẩm, báo lỗi 404
         if (!$laptop) {
             abort(404);
@@ -61,27 +62,27 @@ class HomeController extends Controller
     public function addToCart(Request $request, $id)
     {
         $laptop = DB::table('san_pham')->where('id', $id)->first();
-        
-        if(!$laptop) {
+
+        if (!$laptop) {
             abort(404);
         }
 
         // Lấy giỏ hàng từ session (nếu chưa có thì tạo mảng rỗng)
         $cart = session()->get('cart', []);
-        
+
         // Lấy số lượng từ form gửi lên (mặc định là 1)
         $quantity = $request->input('quantity', 1);
 
         // Nếu sản phẩm đã có trong giỏ, cộng dồn số lượng
-        if(isset($cart[$id])) {
+        if (isset($cart[$id])) {
             $cart[$id]['quantity'] += $quantity;
         } else {
             // Nếu chưa có, thêm mới vào mảng giỏ hàng
             $cart[$id] = [
-                "name" => $laptop->tieu_de,
-                "quantity" => $quantity,
-                "price" => $laptop->gia,
-                "image" => $laptop->hinh_anh
+                'name' => $laptop->tieu_de,
+                'quantity' => $quantity,
+                'price' => $laptop->gia,
+                'image' => $laptop->hinh_anh
             ];
         }
 
@@ -97,7 +98,7 @@ class HomeController extends Controller
     {
         $cart = session()->get('cart', []);
         $brands = DB::table('danh_muc_laptop')->get();
-        
+
         return view('cart.index', compact('cart', 'brands'));
     }
 
@@ -105,8 +106,8 @@ class HomeController extends Controller
     public function removeFromCart($id)
     {
         $cart = session()->get('cart', []);
-        
-        if(isset($cart[$id])) {
+
+        if (isset($cart[$id])) {
             unset($cart[$id]);
             session()->put('cart', $cart);
         }
@@ -118,29 +119,29 @@ class HomeController extends Controller
     public function checkout(Request $request)
     {
         $cart = session()->get('cart', []);
-        
+
         // Kiểm tra nếu giỏ hàng trống
-        if(empty($cart)) {
+        if (empty($cart)) {
             return redirect()->route('cart.view')->with('error', 'Giỏ hàng của bạn trống!');
         }
 
         // Kiểm tra người dùng đã đăng nhập chưa
-        if(!auth()->check()) {
+        if (!auth()->check()) {
             return redirect()->route('login')->with('error', 'Vui lòng đăng nhập trước khi đặt hàng!');
         }
 
         // Lấy thông tin thanh toán từ form
         $paymentMethod = $request->input('payment_method');
-        
+
         // Tính tổng tiền
         $totalPrice = 0;
-        foreach($cart as $item) {
+        foreach ($cart as $item) {
             $totalPrice += $item['price'] * $item['quantity'];
         }
 
         // Lấy thông tin người dùng hiện tại
         $user = auth()->user();
-        
+
         try {
             // Gửi email xác nhận đặt hàng
             Mail::to($user->email)->send(new OrderConfirmation(
@@ -157,7 +158,7 @@ class HomeController extends Controller
 
         // Lưu thông tin đơn hàng vào database (nếu có bảng orders)
         // Ở đây bạn có thể lưu đơn hàng nếu có table orders
-        
+
         // Xóa giỏ hàng sau khi đặt hàng
         session()->forget('cart');
 
@@ -169,5 +170,30 @@ class HomeController extends Controller
     public function orderSuccess()
     {
         return view('cart.order-success');
+    }
+
+    // 7. Hàm tìm kiếm laptop theo từ khóa
+    public function search(Request $request)
+    {
+        $keyword = $request->input('keyword', '');
+
+        // Nếu không có từ khóa, quay lại trang chủ
+        if (empty($keyword)) {
+            return redirect()->route('home');
+        }
+
+        // Tìm kiếm laptop theo tiêu đề, tên, CPU, chip đồ họa
+        $laptops = DB::table('san_pham')
+            ->where('tieu_de', 'LIKE', '%' . $keyword . '%')
+            ->orWhere('ten', 'LIKE', '%' . $keyword . '%')
+            ->orWhere('cpu', 'LIKE', '%' . $keyword . '%')
+            ->orWhere('chip_do_hoa', 'LIKE', '%' . $keyword . '%')
+            ->orWhere('nhu_cau', 'LIKE', '%' . $keyword . '%')
+            ->get();
+
+        // Lấy danh sách thương hiệu
+        $brands = DB::table('danh_muc_laptop')->get();
+
+        return view('laptop.search-results', compact('laptops', 'brands', 'keyword'));
     }
 }
