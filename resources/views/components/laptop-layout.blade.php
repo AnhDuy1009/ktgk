@@ -3,6 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>{{$title}}</title>
     <link rel="stylesheet" href="{{asset('library/bootstrap.min.css')}}">
 
@@ -151,7 +152,7 @@
                                 {{ Auth::user()->name }}
                                 </button>
                                 <div class="dropdown-menu">
-                                <a class="dropdown-item" href="">Quản lý</a>
+                                <a class="dropdown-item" href="{{ route('products.index') }}">Quản lý</a>
                                 <form method="POST" action="{{ route('logout') }}">
                                     @csrf
                                     <a class="dropdown-item" onclick="event.preventDefault();

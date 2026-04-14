@@ -2,14 +2,22 @@
 
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\ProductController;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', [HomeController::class, 'index'])->name('home');
+
+// Routes cho Quản Lý Sản Phẩm (Product Management)
+Route::get('/products/data/get', [ProductController::class, 'getData'])->name('products.getData');
+Route::get('/products', [ProductController::class, 'index'])->name('products.index');
+Route::get('/products/{id}', [ProductController::class, 'show'])->name('products.show');
+Route::delete('/products/{id}', [ProductController::class, 'destroy'])->name('products.destroy');
+
 // Route hiển thị trang chi tiết
 Route::get('laptop/detail/{id}', [HomeController::class, 'detail']);
 
 // Route xử lý thêm vào giỏ hàng
-Route::post('cart/add/{id}', [HomeController::class, 'addToCart']);
+Route::post('cart/add/{id}', [HomeController::class, 'addToCart'])->name('cart.add');
 
 // Route hiển thị giỏ hàng
 Route::get('cart', [HomeController::class, 'viewCart'])->name('cart.view');
